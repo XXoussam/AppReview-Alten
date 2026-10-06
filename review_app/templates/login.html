@@ -1,12 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Connexion{% endblock %}
 {% block content %}
-<form class="panel login" method="post" action="/login">
-  <h1>Connexion</h1>
-  {% if error %}<p class="error">{{ error }}</p>{% endif %}
-  <label>Utilisateur <input name="username" autocomplete="username" required autofocus></label>
-  <label>Mot de passe <input name="password" type="password" autocomplete="current-password" required></label>
-  <button class="btn primary" type="submit">Se connecter</button>
-  <p class="hint">Accès réservé à l'équipe. Les comptes sont créés par un administrateur.</p>
-</form>
+<div class="auth">
+  <section class="auth-side">
+    <h2>De la vidéo de partie au dataset vocal validé.</h2>
+    <p>Découpez les prises de parole, relisez les transcriptions et annotez chaque clip, joueur par joueur.</p>
+    <div class="chips"><span>Découpage sur les silences</span><span>Transcription Parakeet</span><span>Annotation PAD</span><span>Export JSONL</span></div>
+  </section>
+  <section class="auth-main">
+    <form class="login" method="post" action="/login">
+      <h1>Connexion</h1>
+      <p class="lead">Accédez à l'espace de revue de l'équipe.</p>
+      {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+      <label>Utilisateur <input name="username" autocomplete="username" required autofocus placeholder="prenom.nom"></label>
+      <label>Mot de passe <input name="password" type="password" autocomplete="current-password" required placeholder="••••••••"></label>
+      <button class="btn primary" type="submit">Se connecter</button>
+      <p class="hint">Accès réservé à l'équipe. Les comptes sont créés par un administrateur.</p>
+    </form>
+  </section>
+</div>
 {% endblock %}
