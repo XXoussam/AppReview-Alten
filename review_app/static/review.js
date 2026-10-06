@@ -7,6 +7,9 @@ const STATUS_ICON = {pending: '○', transcribed: '◔', approved: '✔', correc
 
 const $ = id => document.getElementById(id);
 const video = $('video'), transcript = $('transcript');
+const fitTranscript = () => { transcript.style.height = 'auto'; transcript.style.height = transcript.scrollHeight + 2 + 'px'; };
+transcript.addEventListener('input', fitTranscript);
+new ResizeObserver(fitTranscript).observe(transcript);
 let clips = [], current = -1, decision = null, stopAt = null;
 let players = JSON.parse(root.dataset.players || '[]');
 const BUSY = ['processing', 'transcribing', 'importing'];
@@ -38,7 +41,7 @@ function tick() {
     $('seg-time').textContent = `${fmtTime(into)} / ${fmtTime(len)}`;
   }
   timeline.update(video.currentTime);
-  $('play').textContent = video.paused ? '▶' : '❚❚';
+  $('play').textContent = video.paused ? 'Lecture' : 'Pause';
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
@@ -154,6 +157,7 @@ function select(i, autoplay = true) {
   const c = clips[i];
   const hasModel = c.model_text !== null;
   transcript.value = c.final_text ?? c.model_text ?? c.reference_text ?? '';
+  fitTranscript();
   transcript.readOnly = hasModel && c.status !== 'corrected';
   $('model-name').textContent = hasModel ? `(${c.model_name})` : '(pas encore transcrit)';
   $('reference').textContent = c.reference_text && hasModel ? `Sous-titre d'origine : « ${c.reference_text} »` : '';
@@ -178,7 +182,7 @@ $('btn-ok').onclick = () => {
   const c = clips[current];
   if (!c) return;
   if (c.model_text === null) { alert('Pas encore de transcription du modèle : utilisez « Corriger ».'); return; }
-  transcript.value = c.model_text;
+  transcript.value = c.model_text; fitTranscript();
   transcript.readOnly = true;
   setDecision('ok');
 };

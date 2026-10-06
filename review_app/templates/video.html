@@ -10,8 +10,8 @@
       <video id="video" src="/media/videos/{{ video.id }}" preload="metadata" playsinline></video>
     </div>
     <div class="controls">
-      <button id="play" class="btn icon" title="Lecture / pause (espace)">▶</button>
-      <button id="replay" class="btn" title="Revoir le segment (R)">⏮ Revoir segment</button>
+      <button id="play" class="btn primary play" title="Lecture / pause (espace)">Lecture</button>
+      <button id="replay" class="btn" title="Revoir le segment (R)">Revoir le segment</button>
       <div class="seg-bar"><div id="seg-progress"></div></div>
       <span id="seg-time" class="time">00:00.00 / 00:00.00</span>
     </div>
@@ -77,11 +77,11 @@
 
     <fieldset class="panel">
       <legend>Transcription <span id="model-name" class="hint"></span></legend>
-      <textarea id="transcript" rows="2" readonly placeholder="Pas encore de transcription du modèle"></textarea>
+      <textarea id="transcript" rows="1" readonly placeholder="Pas encore de transcription du modèle"></textarea>
       <div class="row">
-        <button id="btn-ok" class="btn ok">☑ Correcte</button>
-        <button id="btn-edit" class="btn warn">✎ Corriger</button>
-        <button id="btn-reject" class="btn ghost danger" title="Bruit, musique, voix superposées…">✕ Pas de parole exploitable</button>
+        <button id="btn-ok" class="btn ok">Correcte</button>
+        <button id="btn-edit" class="btn warn">Corriger</button>
+        <button id="btn-reject" class="btn ghost danger" title="Bruit, musique, voix superposées…">Pas de parole exploitable</button>
         <span id="decision" class="hint"></span>
       </div>
       <p id="reference" class="hint"></p>
@@ -110,8 +110,8 @@
       {% endfor %}
       <label class="notes">Notes : <textarea id="notes" rows="2"></textarea></label>
       <div class="row nav">
-        <button id="prev" class="btn nav-prev">⇤ Précédent</button>
-        <button id="save-next" class="btn primary" title="Ctrl+Entrée">☑ Valider &amp; Suivant</button>
+        <button id="prev" class="btn nav-prev">Précédent</button>
+        <button id="save-next" class="btn primary" title="Ctrl+Entrée">Valider &amp; Suivant</button>
       </div>
       <p id="save-msg" class="hint"></p>
     </fieldset>
