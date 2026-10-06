@@ -1,0 +1,8 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# App data: database, users (password hashes), uploaded videos and clips
+review_data/
+.claude/

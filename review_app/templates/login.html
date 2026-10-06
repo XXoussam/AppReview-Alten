@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Connexion{% endblock %}
+{% block content %}
+<form class="panel login" method="post" action="/login">
+  <h1>Connexion</h1>
+  {% if error %}<p class="error">{{ error }}</p>{% endif %}
+  <label>Utilisateur <input name="username" autocomplete="username" required autofocus></label>
+  <label>Mot de passe <input name="password" type="password" autocomplete="current-password" required></label>
+  <button class="btn primary" type="submit">Se connecter</button>
+  <p class="hint">Accès réservé à l'équipe. Les comptes sont créés par un administrateur.</p>
+</form>
+{% endblock %}

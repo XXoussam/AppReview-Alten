@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ video.title }}{% endblock %}
+{% block content %}
+<div id="review" class="review" data-video-id="{{ video.id }}" data-role="{{ user.role }}"
+     data-pad-min="{{ pad_scale[0] }}" data-pad-max="{{ pad_scale[1] }}" data-status="{{ video.status }}"
+     data-duration="{{ video.duration or 0 }}" data-players="{{ players | tojson | forceescape }}">
+
+  <section class="left">
+    <div class="player">
+      <video id="video" src="/media/videos/{{ video.id }}" preload="metadata" playsinline></video>
+    </div>
+    <div class="controls">
+      <button id="play" class="btn icon" title="Lecture / pause (espace)">▶</button>
+      <button id="replay" class="btn" title="Revoir le segment (R)">⏮ Revoir segment</button>
+      <div class="seg-bar"><div id="seg-progress"></div></div>
+      <span id="seg-time" class="time">00:00.00 / 00:00.00</span>
+    </div>
+    <fieldset class="panel timeline-panel">
+      <legend>Pistes par joueur</legend>
+      <div class="tl-toolbar">
+        <button id="tl-zoom-out" class="btn ghost" title="Dézoomer (Ctrl + molette)">−</button>
+        <button id="tl-zoom-in" class="btn ghost" title="Zoomer (Ctrl + molette)">+</button>
+        <button id="tl-fit" class="btn ghost">Tout afficher</button>
+        <label class="hint"><input type="checkbox" id="tl-follow" checked> suivre la lecture</label>
+        <label class="hint">Son :
+          <select id="tl-audio">
+            <option value="video">vidéo originale</option>
+            <option value="separated">pistes séparées</option>
+          </select>
+        </label>
+      </div>
+      <div id="timeline" class="tl">
+        <div class="tl-labels" id="tl-labels"></div>
+        <div class="tl-scroll" id="tl-scroll">
+          <div class="tl-content" id="tl-content">
+            <div class="tl-ruler" id="tl-ruler"></div>
+            <div id="tl-lanes"></div>
+            <div class="tl-playhead" id="tl-playhead"></div>
+          </div>
+        </div>
+      </div>
+      <p class="hint" id="tl-empty" hidden>Aucun clip pour l'instant.</p>
+      {% if user.role == 'admin' %}
+      <form id="import-form" class="import">
+        <label>Importer les voix séparées (ZIP : clips audio + manifest.csv)
+          <input type="file" name="file" accept=".zip" required></label>
+        <label class="hint"><input type="checkbox" name="replace" value="true"> remplacer les clips existants</label>
+        <button class="btn" type="submit">Importer</button>
+        <span id="import-msg" class="hint"></span>
+      </form>
+      {% endif %}
+    </fieldset>
+
+    <p class="statusline">Vidéo chargée : {{ video.original_filename }} ·
+      <span id="video-state" class="state {{ video.status }}">{{ video.status }}</span>
+      <span id="video-error" class="error">{{ video.error or '' }}</span></p>
+  </section>
+
+  <section class="right">
+    <fieldset class="panel segments">
+      <legend>Segments</legend>
+      <div class="toolbar">
+        <span id="stats" class="hint"></span>
+        <label class="hint"><input type="checkbox" id="only-todo"> à revoir seulement</label>
+        {% if user.role == 'admin' %}
+        <button id="transcribe" class="btn ghost" title="Modèle : {{ transcriber }}">Transcrire</button>
+        <a class="btn ghost" href="/api/videos/{{ video.id }}/export">Exporter (JSONL)</a>
+        {% endif %}
+      </div>
+      <div class="table-scroll">
+        <table class="grid" id="segments">
+          <thead><tr><th><input type="checkbox" id="select-all" title="Sélectionner tout"></th><th>#</th><th>Joueur</th><th>Début</th><th>Fin</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </fieldset>
+
+    <fieldset class="panel">
+      <legend>Transcription <span id="model-name" class="hint"></span></legend>
+      <textarea id="transcript" rows="2" readonly placeholder="Pas encore de transcription du modèle"></textarea>
+      <div class="row">
+        <button id="btn-ok" class="btn ok">☑ Correcte</button>
+        <button id="btn-edit" class="btn warn">✎ Corriger</button>
+        <button id="btn-reject" class="btn ghost danger" title="Bruit, musique, voix superposées…">✕ Pas de parole exploitable</button>
+        <span id="decision" class="hint"></span>
+      </div>
+      <p id="reference" class="hint"></p>
+    </fieldset>
+
+    <fieldset class="panel pad">
+      <legend>Annotation PAD</legend>
+      <div class="who-speaks">
+        <select id="speaker" title="Joueur qui parle">
+          <option value="">— joueur —</option>
+          {% for p in players %}<option>{{ p }}</option>{% endfor %}
+          <option value="__add">+ ajouter un joueur…</option>
+        </select>
+        <span id="seg-range" class="time"></span>
+      </div>
+      {% for dim, label, lo, hi in [('pleasure', 'Plaisir', 'Désagréable', 'Agréable'),
+                                     ('arousal', 'Activation', 'Passif', 'Actif'),
+                                     ('dominance', 'Dominance', 'Dominé', 'Dominant')] %}
+      <div class="pad-row">
+        <span class="pad-label {{ dim }}">{{ label }}</span>
+        <span class="hint">{{ lo }}</span>
+        <input type="range" id="{{ dim }}" min="{{ pad_scale[0] }}" max="{{ pad_scale[1] }}" step="1">
+        <span class="hint">{{ hi }}</span>
+        <output id="{{ dim }}-value"></output>
+      </div>
+      {% endfor %}
+      <label class="notes">Notes : <textarea id="notes" rows="2"></textarea></label>
+      <div class="row nav">
+        <button id="prev" class="btn nav-prev">⇤ Précédent</button>
+        <button id="save-next" class="btn primary" title="Ctrl+Entrée">☑ Valider &amp; Suivant</button>
+      </div>
+      <p id="save-msg" class="hint"></p>
+    </fieldset>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/common.js?v={{ static_v }}"></script><script src="/static/timeline.js?v={{ static_v }}"></script><script src="/static/review.js?v={{ static_v }}"></script>{% endblock %}

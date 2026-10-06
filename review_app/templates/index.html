@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Vidéos{% endblock %}
+{% block content %}
+<div class="index">
+  {% if user.role == 'admin' %}
+  <fieldset class="panel">
+    <legend>Nouvelle vidéo</legend>
+    <form id="upload-form" class="upload">
+      <label>Vidéo de la partie <input type="file" name="file" required
+        accept=".mp4,.mkv,.mov,.webm,.avi,.m4v,.ts,.flv,.mp3,.wav,.m4a,.ogg"></label>
+      <label>Titre <input name="title" placeholder="SCRIM | PCS G1"></label>
+      <label>Joueurs (séparés par des virgules)
+        <input name="players" placeholder="Enjawve, Kaylem, MelyaP, KKT, Ryuk"></label>
+      <label>Découpage
+        <select name="segmentation" id="segmentation">
+          <option value="silence">Sur les silences (une prise de parole = un clip)</option>
+          <option value="fixed">Longueur fixe</option>
+          <option value="captions">Depuis un fichier de sous-titres JSON</option>
+          <option value="none">Aucun (j'importerai les voix séparées par joueur)</option>
+        </select>
+      </label>
+      <div class="opts" data-mode="silence">
+        <label>Seuil de silence (dB) <input name="noise_db" type="number" step="1" value="-35"></label>
+        <label>Silence minimum (s) <input name="min_silence" type="number" step="0.1" value="0.5"></label>
+        <label>Clip max (s) <input name="max_len" type="number" step="1" value="20"></label>
+      </div>
+      <div class="opts" data-mode="fixed" hidden>
+        <label>Longueur (s) <input name="fixed_len" type="number" step="1" value="10"></label>
+      </div>
+      <div class="opts" data-mode="captions" hidden>
+        <label>Sous-titres (liste JSON de {start, duration, text}) <input type="file" name="captions" accept=".json"></label>
+      </div>
+      <button class="btn primary" type="submit">Envoyer et découper</button>
+      <progress id="upload-progress" max="100" value="0" hidden></progress>
+      <p id="upload-msg" class="hint"></p>
+    </form>
+  </fieldset>
+  {% endif %}
+
+  <fieldset class="panel">
+    <legend>Vidéos</legend>
+    <table class="grid">
+      <thead><tr><th>Titre</th><th>Fichier</th><th>Durée</th><th>Clips</th><th>Revus</th><th>État</th><th>Ajoutée</th><th></th></tr></thead>
+      <tbody>
+      {% for v in videos %}
+        <tr>
+          <td><a href="/videos/{{ v.id }}">{{ v.title }}</a></td>
+          <td>{{ v.original_filename }}</td>
+          <td class="time" data-seconds="{{ v.duration or '' }}"></td>
+          <td>{{ v.clip_count }}</td>
+          <td>{{ v.reviewed_count or 0 }}</td>
+          <td><span class="state {{ v.status }}" title="{{ v.error or '' }}">{{ v.status }}</span></td>
+          <td>{{ v.created_at[:16].replace('T', ' ') }} · {{ v.uploaded_by }}</td>
+          <td>{% if user.role == 'admin' %}<button class="btn ghost danger" data-delete="{{ v.id }}" data-title="{{ v.title }}">Supprimer</button>{% endif %}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" class="hint">Aucune vidéo pour l'instant.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </fieldset>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/common.js?v={{ static_v }}"></script><script src="/static/index.js?v={{ static_v }}"></script>{% endblock %}
