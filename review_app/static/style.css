@@ -44,7 +44,7 @@ h1.page { margin: 0 0 4px; font-size: 26px; font-weight: 600; letter-spacing: -.
 .btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .btn.warn.active { background: var(--warn); color: #2a1a00; border-color: var(--warn); }
 .btn.danger.active { background: var(--danger); color: #2b0a0f; border-color: var(--danger); }
-.btn.icon { width: 44px; padding: 0; text-align: center; border-radius: 50%; height: 40px; line-height: 38px; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.play { min-width: 92px; font-weight: 700; }
 
 input, select, textarea { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 10px;
   padding: 9px 12px; font: inherit; width: 100%; }
@@ -52,6 +52,7 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--a
 input[type=checkbox], input[type=radio] { accent-color: var(--accent); width: auto; }
 input::placeholder, textarea::placeholder { color: #5b6a90; }
 textarea[readonly] { color: #c9d3e6; }
+#transcript { resize: none; overflow: hidden; min-height: 0; line-height: 1.5; font-size: 16px; }
 label { display: block; margin-bottom: 10px; color: var(--soft); font-weight: 500; font-size: 13px; }
 label input, label select, label textarea { margin-top: 6px; }
 
@@ -158,7 +159,8 @@ details.new-video .panel { margin-top: 14px; max-width: 960px; border-radius: 20
 .tl-ms { background: transparent; color: var(--muted); border: 1px solid var(--line-2); border-radius: 6px;
   font: 600 10.5px/1 var(--mono); width: 22px; height: 22px; padding: 0; cursor: pointer; }
 .tl-ms.on { background: var(--warn); color: #2a1a00; border-color: var(--warn); }
-.tl-scroll { overflow-x: auto; overflow-y: hidden; position: relative; }
+.tl-scroll { overflow-x: auto; overflow-y: hidden; position: relative; scrollbar-width: none; -ms-overflow-style: none; }
+.tl-scroll::-webkit-scrollbar { display: none; }
 .tl-content { position: relative; min-width: 100%; cursor: crosshair; }
 .tl-ruler { height: 24px; position: relative; border-bottom: 1px solid var(--line); }
 .tl-tick { position: absolute; top: 0; height: 100%; border-left: 1px solid var(--line); padding-left: 4px;
