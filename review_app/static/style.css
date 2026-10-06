@@ -44,7 +44,7 @@ h1.page { margin: 0 0 4px; font-size: 26px; font-weight: 600; letter-spacing: -.
 .btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .btn.warn.active { background: var(--warn); color: #2a1a00; border-color: var(--warn); }
 .btn.danger.active { background: var(--danger); color: #2b0a0f; border-color: var(--danger); }
-.btn.play { min-width: 92px; font-weight: 700; }
+.btn.icon { width: 42px; height: 42px; padding: 0; line-height: 40px; text-align: center; border-radius: 50%; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 
 input, select, textarea { background: var(--panel-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 10px;
   padding: 9px 12px; font: inherit; width: 100%; }

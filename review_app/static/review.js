@@ -41,7 +41,7 @@ function tick() {
     $('seg-time').textContent = `${fmtTime(into)} / ${fmtTime(len)}`;
   }
   timeline.update(video.currentTime);
-  $('play').textContent = video.paused ? 'Lecture' : 'Pause';
+  $('play').textContent = video.paused ? '▶' : '❚❚';
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
