@@ -2,7 +2,12 @@
 {% block title %}Vidéos{% endblock %}
 {% block content %}
 <div class="index">
+  <div class="page-head">
+    <div><h1 class="page">Vidéos</h1><p>{{ videos|length }} vidéo{{ 's' if videos|length != 1 else '' }} · revue des clips et annotation PAD</p></div>
+  </div>
   {% if user.role == 'admin' %}
+  <details class="new-video"{{ ' open' if not videos else '' }}>
+  <summary>＋ Nouvelle vidéo</summary>
   <fieldset class="panel">
     <legend>Nouvelle vidéo</legend>
     <form id="upload-form" class="upload">
@@ -35,10 +40,11 @@
       <p id="upload-msg" class="hint"></p>
     </form>
   </fieldset>
+  </details>
   {% endif %}
 
   <fieldset class="panel">
-    <legend>Vidéos</legend>
+    <legend>Bibliothèque</legend>
     <table class="grid">
       <thead><tr><th>Titre</th><th>Fichier</th><th>Durée</th><th>Clips</th><th>Revus</th><th>État</th><th>Ajoutée</th><th></th></tr></thead>
       <tbody>
