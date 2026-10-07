@@ -87,7 +87,7 @@ details.new-video .panel { margin-top: 14px; max-width: 960px; border-radius: 20
 
 .grid { width: 100%; border-collapse: separate; border-spacing: 0; }
 .grid th { color: var(--muted); font-size: 11.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.grid td { padding: 12px; border-bottom: 1px solid #131c33; overflow-wrap: anywhere; vertical-align: middle; }
+.grid td { padding: 12px; border-bottom: 1px solid #131c33; overflow-wrap: break-word; vertical-align: middle; }
 .grid tbody tr:hover td { background: rgba(255,255,255,.02); }
 .grid td a { color: var(--text); font-weight: 600; text-decoration: none; }
 .grid td a:hover { color: var(--accent); }
@@ -194,3 +194,36 @@ details.new-video .panel { margin-top: 14px; max-width: 960px; border-radius: 20
 @media (prefers-reduced-motion: reduce) {
   .spinner, #segments tr.asr-busy td, .tl-clip.asr-busy { animation: none; }
 }
+
+/* Team switch on the review page: Transcription | Annotation PAD. */
+.view-tabs { display: flex; gap: 4px; margin: 0 0 12px; padding: 4px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--panel-2); }
+.view-tabs a { flex: 1; text-align: center; padding: 8px 12px; border-radius: 10px; color: var(--muted);
+  text-decoration: none; font-weight: 600; }
+.view-tabs a:hover { color: var(--text); background: var(--raise); }
+.view-tabs a.active { color: var(--accent-ink); background: var(--accent); }
+#segments tr.skip td { opacity: .4; }
+#pad-said { margin: 0 0 10px; font-style: italic; }
+.notice { margin: 4px 0 12px; padding: 12px 14px; border: 1px solid var(--accent-line); border-radius: 10px;
+  background: var(--accent-soft); color: var(--soft); line-height: 1.5; }
+[hidden] { display: none !important; }  /* the hidden attribute wins over .row etc. */
+
+/* Buttons and badges always stay on one line, whatever the column width. */
+.btn, .state { white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.grid td.nowrap { white-space: nowrap; width: 1%; }
+
+/* Library: per-team progress, the whole cell opens that team's page. */
+.progress-link { display: inline-flex; flex-direction: column; gap: 5px; min-width: 120px; padding: 8px 12px;
+  border: 1px solid var(--line-2); border-radius: 10px; background: var(--raise); text-decoration: none; }
+.grid td a.progress-link { font-weight: 500; }
+.progress-link:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.progress-count { font-family: var(--mono); font-weight: 600; color: var(--text); }
+/* <progress>, not an inline width: the page's CSP (style-src 'self') blocks style="" attributes. */
+.progress-bar { display: block; width: 100%; height: 4px; border: 0; border-radius: 2px; background: var(--line);
+  overflow: hidden; appearance: none; }
+.progress-bar::-webkit-progress-bar { background: var(--line); }
+.progress-bar::-webkit-progress-value { background: var(--accent); }
+.progress-bar::-moz-progress-bar { background: var(--accent); }
+.progress-open { font-size: 12px; color: var(--muted); }
+.progress-link:hover .progress-open { color: var(--accent); }

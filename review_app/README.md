@@ -8,9 +8,16 @@ speech dataset:
    `end` as seconds in the original video.
 3. **Transcribe** the clips with the ASR model (Parakeet now, the fine-tuned checkpoint later),
    either inside the app or from a separate GPU job that pushes its results through the API.
-4. A reviewer listens to each segment, **played directly in the original video** at the right
-   timestamp, marks the transcript **Correcte** or **Corrige** it, picks the **player** who is
-   talking, scores **PAD** (Plaisir, Activation, Dominance, 1 to 7) and adds notes.
+4. Two review pages per video, one per consultant team, over the same clips and the same timeline.
+   Every segment is **played directly in the original video** at the right timestamp.
+   - **Transcription** (`/videos/<id>/transcription`): mark the transcript **Correcte**, **Corrige** it,
+     or reject the clip as **Pas de parole exploitable**; tick clips to (re)transcribe them.
+   - **Annotation PAD** (`/videos/<id>/pad`): pick the **player** who is talking, score **PAD**
+     (Plaisir, Activation, Dominance, 1 to 7) and add notes. Clips the transcription team rejected are
+     greyed out and skipped.
+   Each team's save only writes its own fields (`POST /api/clips/{id}/review` and
+   `POST /api/clips/{id}/pad`), so both can work on the same clip without overwriting each other,
+   and each page tracks its own progress.
 5. **Export** the validated clips as a NeMo manifest (JSONL) for fine-tuning and for the PAD model.
 
 The review screen follows the layout of Arthur's desktop tool: video and "Revoir segment" on the

@@ -42,8 +42,10 @@ CREATE TABLE IF NOT EXISTS clips (
   dominance INTEGER,
   notes TEXT,
   status TEXT NOT NULL,          -- pending | transcribed | approved | corrected | rejected
-  reviewed_by TEXT,
+  reviewed_by TEXT,              -- transcript team
   reviewed_at TEXT,
+  pad_by TEXT,                   -- PAD team: who scored speaker/PAD/notes, and when
+  pad_at TEXT,
   UNIQUE (video_id, idx)
 );
 
@@ -59,6 +61,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
 # Columns added after the first release; ALTERed into databases created before them.
 MIGRATIONS = [
   ('clips', 'source', "TEXT NOT NULL DEFAULT 'auto'"),
+  ('clips', 'pad_by', 'TEXT'),
+  ('clips', 'pad_at', 'TEXT'),
 ]
 
 

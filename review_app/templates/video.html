@@ -2,7 +2,7 @@
 {% block title %}{{ video.title }}{% endblock %}
 {% block content %}
 <div id="review" class="review" data-video-id="{{ video.id }}" data-role="{{ user.role }}"
-     data-pad-min="{{ pad_scale[0] }}" data-pad-max="{{ pad_scale[1] }}" data-status="{{ video.status }}"
+     data-pad-min="{{ pad_scale[0] }}" data-pad-max="{{ pad_scale[1] }}" data-status="{{ video.status }}" data-view="{{ view }}"
      data-duration="{{ video.duration or 0 }}" data-players="{{ players | tojson | forceescape }}">
 
   <section class="left">
@@ -57,24 +57,34 @@
   </section>
 
   <section class="right">
+    <nav class="view-tabs" aria-label="Équipe">
+      <a href="/videos/{{ video.id }}/transcription" class="{{ 'active' if view == 'transcription' }}">Transcription</a>
+      <a href="/videos/{{ video.id }}/pad" class="{{ 'active' if view == 'pad' }}">Annotation PAD</a>
+    </nav>
+
     <fieldset class="panel segments">
       <legend>Segments</legend>
       <div class="toolbar">
         <span id="stats" class="hint"></span>
         <label class="hint"><input type="checkbox" id="only-todo"> à revoir seulement</label>
         {% if user.role == 'admin' %}
+        {% if view == 'transcription' %}
         <button id="transcribe" class="btn ghost" title="Modèle : {{ transcriber }}">Transcrire</button>
+        {% endif %}
         <a class="btn ghost" href="/api/videos/{{ video.id }}/export">Exporter (JSONL)</a>
         {% endif %}
       </div>
       <div class="table-scroll">
         <table class="grid" id="segments">
-          <thead><tr><th><input type="checkbox" id="select-all" title="Sélectionner tout"></th><th>#</th><th>Joueur</th><th>Début</th><th>Fin</th><th></th></tr></thead>
+          <thead><tr>
+            <th>{% if view == 'transcription' %}<input type="checkbox" id="select-all" title="Sélectionner tout">{% endif %}</th>
+            <th>#</th><th>Joueur</th><th>Début</th><th>Fin</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
     </fieldset>
 
+    {% if view == 'transcription' %}
     <fieldset class="panel">
       <legend>Transcription <span id="model-name" class="hint"></span></legend>
       <textarea id="transcript" rows="1" readonly placeholder="Pas encore de transcription du modèle"></textarea>
@@ -85,16 +95,20 @@
         <span id="decision" class="hint"></span>
       </div>
       <p id="reference" class="hint"></p>
+      <div class="row nav">
+        <button id="prev" class="btn nav-prev">Précédent</button>
+        <button id="save-next" class="btn primary" title="Ctrl+Entrée">Valider &amp; Suivant</button>
+      </div>
+      <p class="hint"><span id="seg-range" class="time"></span> <span id="save-msg"></span></p>
     </fieldset>
-
+    {% else %}
     <fieldset class="panel pad">
       <legend>Annotation PAD</legend>
+      <p id="pad-notice" class="notice" hidden></p>
+      <div id="pad-form">
+      <p id="pad-said" class="hint"></p>
       <div class="who-speaks">
-        <select id="speaker" title="Joueur qui parle">
-          <option value="">— joueur —</option>
-          {% for p in players %}<option>{{ p }}</option>{% endfor %}
-          <option value="__add">+ ajouter un joueur…</option>
-        </select>
+        <select id="speaker" title="Joueur qui parle (d’après les clips séparés)"></select>
         <span id="seg-range" class="time"></span>
       </div>
       {% for dim, label, lo, hi in [('pleasure', 'Plaisir', 'Désagréable', 'Agréable'),
@@ -109,12 +123,14 @@
       </div>
       {% endfor %}
       <label class="notes">Notes : <textarea id="notes" rows="2"></textarea></label>
-      <div class="row nav">
+      </div>
+      <div class="row nav" id="pad-nav">
         <button id="prev" class="btn nav-prev">Précédent</button>
         <button id="save-next" class="btn primary" title="Ctrl+Entrée">Valider &amp; Suivant</button>
       </div>
       <p id="save-msg" class="hint"></p>
     </fieldset>
+    {% endif %}
   </section>
 </div>
 {% endblock %}

@@ -329,3 +329,35 @@ def test_parakeet_api_offline_gives_clear_error(tmp_path):
   wav.write_bytes(b'RIFF')
   with pytest.raises(RuntimeError, match='unreachable.*Start-Asr-Api'):
     ParakeetApiTranscriber('http://127.0.0.1:9', 'commentary', timeout=5).transcribe([wav])
+
+
+def test_transcript_and_pad_teams_do_not_overwrite_each_other(client, sample_video):
+  login(client, 'admin')
+  with open(sample_video, 'rb') as f:
+    video_id = client.post('/api/videos', files={'file': ('game.mp4', f, 'video/mp4')},
+                           data={'title': 'G1', 'segmentation': 'silence'}).json()['id']
+  assert wait_ready(client, video_id)['status'] == 'ready'
+  clip = client.get(f'/api/videos/{video_id}/clips').json()[0]
+  client.put(f'/api/clips/{clip["id"]}/model-transcript', json={'text': 'push mid', 'model': 'm'},
+             headers={'Authorization': 'Bearer tok'})
+
+  # One page per team; the old URL lands on the transcription page.
+  assert client.get(f'/videos/{video_id}', follow_redirects=False).headers['location'] == \
+    f'/videos/{video_id}/transcription'
+  assert client.get(f'/videos/{video_id}/pad').status_code == 200
+  assert client.get(f'/videos/{video_id}/other').status_code == 404
+
+  login(client, 'rev')
+  r = client.post(f'/api/clips/{clip["id"]}/pad',
+                  json={'speaker': 'Kaylem', 'pleasure': 6, 'arousal': 2, 'dominance': 5, 'notes': 'calm'})
+  assert r.status_code == 200 and r.json()['pad_by'] == 'rev' and r.json()['status'] == 'transcribed'
+  # The transcript team's decisions, even a rejection, keep the PAD team's work.
+  for action in ('correct', 'reject', 'reset'):
+    c = client.post(f'/api/clips/{clip["id"]}/review', json={'action': action, 'text': 'push mid now'}).json()
+    assert (c['speaker'], c['pleasure'], c['arousal'], c['dominance'], c['notes'], c['pad_by']) == \
+      ('Kaylem', 6, 2, 5, 'calm', 'rev'), action
+  c = client.post(f'/api/clips/{clip["id"]}/review', json={'action': 'correct', 'text': 'push mid now'}).json()
+  # ... and saving PAD keeps the transcript decision.
+  c = client.post(f'/api/clips/{clip["id"]}/pad', json={'pleasure': 3, 'arousal': 3, 'dominance': 3}).json()
+  assert (c['status'], c['final_text'], c['reviewed_by']) == ('corrected', 'push mid now', 'rev')
+  assert client.post(f'/api/clips/{clip["id"]}/pad', json={'pleasure': 8}).status_code == 400

@@ -39,6 +39,7 @@ VIDEO_CONTENT_TYPES = {'.mp4': 'video/mp4', '.m4v': 'video/mp4', '.webm': 'video
                        '.mov': 'video/quicktime', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.m4a': 'audio/mp4',
                        '.ogg': 'audio/ogg'}
 PAD_MIN, PAD_MAX = 1, 7
+PAD_DIMS = ('pleasure', 'arousal', 'dominance')
 BUSY = ('processing', 'transcribing', 'importing')
 BROWSER_PLAYABLE = {'.mp4', '.m4v', '.webm', '.mov', '.mp3', '.wav', '.m4a', '.ogg'}
 
@@ -165,13 +166,20 @@ def create_app(settings=None):
     return templates.TemplateResponse(request, 'index.html', {
       'user': user, 'videos': list_videos(), 'max_upload_mb': settings.max_upload_mb})
 
-  @app.get('/videos/{video_id}', response_class=HTMLResponse)
-  def video_page(request: Request, video_id: str, user=Depends(page_user)):
+  @app.get('/videos/{video_id}')
+  def video_default_page(video_id: str):
+    return RedirectResponse(f'/videos/{video_id}/transcription', status_code=303)
+
+  # Two review pages over the same clips, one per consultant team: transcripts, and speaker + PAD.
+  @app.get('/videos/{video_id}/{view}', response_class=HTMLResponse)
+  def video_page(request: Request, video_id: str, view: str, user=Depends(page_user)):
     if not user:
       return RedirectResponse('/login', status_code=303)
+    if view not in ('transcription', 'pad'):
+      raise HTTPException(404, 'unknown view')
     video = get_video(video_id)
     return templates.TemplateResponse(request, 'video.html', {
-      'user': user, 'video': video, 'transcriber': transcriber.name,
+      'user': user, 'video': video, 'view': view, 'transcriber': transcriber.name,
       'players': json.loads(video['players']), 'pad_scale': (PAD_MIN, PAD_MAX)})
 
   # ---------- videos ----------
@@ -185,7 +193,10 @@ def create_app(settings=None):
   def list_videos():
     return db.all("""
       SELECT v.*, COUNT(c.id) AS clip_count,
-             SUM(c.status IN ('approved', 'corrected', 'rejected')) AS reviewed_count
+             SUM(c.status IN ('approved', 'corrected', 'rejected')) AS reviewed_count,
+             -- PAD is scored on separated per-player clips only (one speaker per clip).
+             SUM(c.source = 'separated' AND c.status != 'rejected' AND c.pad_by IS NOT NULL) AS pad_count,
+             SUM(c.source = 'separated' AND c.status != 'rejected') AS pad_total
       FROM videos v LEFT JOIN clips c ON c.video_id = v.id
       GROUP BY v.id ORDER BY v.created_at DESC""")
 
@@ -501,11 +512,11 @@ def create_app(settings=None):
 
   @app.post('/api/clips/{clip_id}/review')
   async def review_clip(clip_id: str, request: Request, user=Depends(human_user)):
-    """body {"action": "approve" | "correct" | "reject" | "reset", "text": "...",
-             "speaker": "...", "pleasure": 1-7, "arousal": 1-7, "dominance": 1-7, "notes": "..."}
+    """Transcript team: body {"action": "approve" | "correct" | "reject" | "reset", "text": "..."}
 
     approve = the model transcript is right, correct = save the typed text,
     reject = no usable speech (noise, music, overlap), reset = back to unreviewed.
+    Never touches the PAD team's fields, unless the body also carries them (see save_pad).
     """
     body = await request.json()
     clip = db.one('SELECT * FROM clips WHERE id = ?', clip_id)
@@ -529,21 +540,42 @@ def create_app(settings=None):
       text, status = None, 'transcribed' if clip['model_text'] is not None else 'pending'
     else:
       raise HTTPException(400, 'unknown action')
+    pad_fields = PAD_DIMS + ('speaker', 'notes')
+    pad = parse_pad(body) if any(k in body for k in pad_fields) else None
+    reviewer = user['username'] if action != 'reset' else None
+    db.run('UPDATE clips SET final_text = ?, status = ?, reviewed_by = ?, reviewed_at = ? WHERE id = ?',
+           text, status, reviewer, now() if reviewer else None, clip_id)
+    if pad:
+      store_pad(clip_id, pad, user)
+    db.audit(user['username'], f'review:{action}', clip_id)
+    return db.one('SELECT * FROM clips WHERE id = ?', clip_id)
+
+  @app.post('/api/clips/{clip_id}/pad')
+  async def save_pad(clip_id: str, request: Request, user=Depends(human_user)):
+    """PAD team: body {"speaker": "...", "pleasure": 1-7, "arousal": 1-7, "dominance": 1-7, "notes": "..."}.
+    Independent of the transcript review, so both teams can work on the same clip."""
+    if not db.one('SELECT id FROM clips WHERE id = ?', clip_id):
+      raise HTTPException(404, 'clip not found')
+    store_pad(clip_id, parse_pad(await request.json()), user)
+    db.audit(user['username'], 'pad', clip_id)
+    return db.one('SELECT * FROM clips WHERE id = ?', clip_id)
+
+  def parse_pad(body):
     pad = {}
-    for dim in ('pleasure', 'arousal', 'dominance'):
+    for dim in PAD_DIMS:
       value = body.get(dim)
       if value is not None and (not isinstance(value, int) or not PAD_MIN <= value <= PAD_MAX):
         raise HTTPException(400, f'{dim} must be an integer from {PAD_MIN} to {PAD_MAX}')
-      pad[dim] = value if action not in ('reject', 'reset') else None
-    speaker = (body.get('speaker') or '').strip()[:64] or None
-    notes = (body.get('notes') or '').strip()[:2000] or None
-    reviewer = user['username'] if action != 'reset' else None
-    db.run("""UPDATE clips SET final_text = ?, status = ?, reviewed_by = ?, reviewed_at = ?, speaker = ?,
-                pleasure = ?, arousal = ?, dominance = ?, notes = ? WHERE id = ?""",
-           text, status, reviewer, now() if reviewer else None, speaker,
-           pad['pleasure'], pad['arousal'], pad['dominance'], notes, clip_id)
-    db.audit(user['username'], f'review:{action}', clip_id)
-    return db.one('SELECT * FROM clips WHERE id = ?', clip_id)
+      pad[dim] = value
+    pad['speaker'] = (body.get('speaker') or '').strip()[:64] or None
+    pad['notes'] = (body.get('notes') or '').strip()[:2000] or None
+    return pad
+
+  def store_pad(clip_id, pad, user):
+    db.run("""UPDATE clips SET speaker = ?, pleasure = ?, arousal = ?, dominance = ?, notes = ?,
+                pad_by = ?, pad_at = ? WHERE id = ?""",
+           pad['speaker'], pad['pleasure'], pad['arousal'], pad['dominance'], pad['notes'],
+           user['username'], now(), clip_id)
 
   # ---------- stats & export ----------
 
@@ -584,6 +616,7 @@ def create_app(settings=None):
       'status': c['status'],
       'model_text': c['model_text'],
       'reviewed_by': c['reviewed_by'],
+      'pad_by': c['pad_by'],
     }, ensure_ascii=False) for c in clips]
     db.audit(user['username'], 'export', video_id)
     return PlainTextResponse('\n'.join(lines) + ('\n' if lines else ''), media_type='application/x-ndjson',

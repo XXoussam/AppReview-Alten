@@ -46,21 +46,30 @@
   <fieldset class="panel">
     <legend>Bibliothèque</legend>
     <table class="grid">
-      <thead><tr><th>Titre</th><th>Fichier</th><th>Durée</th><th>Clips</th><th>Revus</th><th>État</th><th>Ajoutée</th><th></th></tr></thead>
+      <thead><tr><th>Titre</th><th>Fichier</th><th>Durée</th><th>Clips</th><th>Transcription</th><th>PAD</th><th>État</th><th>Ajoutée</th><th></th></tr></thead>
       <tbody>
       {% for v in videos %}
         <tr>
-          <td><a href="/videos/{{ v.id }}">{{ v.title }}</a></td>
+          <td>{{ v.title }}</td>
           <td>{{ v.original_filename }}</td>
-          <td class="time" data-seconds="{{ v.duration or '' }}"></td>
-          <td>{{ v.clip_count }}</td>
-          <td>{{ v.reviewed_count or 0 }}</td>
-          <td><span class="state {{ v.status }}" title="{{ v.error or '' }}">{{ v.status }}</span></td>
-          <td>{{ v.created_at[:16].replace('T', ' ') }} · {{ v.uploaded_by }}</td>
-          <td>{% if user.role == 'admin' %}<button class="btn ghost danger" data-delete="{{ v.id }}" data-title="{{ v.title }}">Supprimer</button>{% endif %}</td>
+          <td class="time nowrap" data-seconds="{{ v.duration or '' }}"></td>
+          <td class="nowrap">{{ v.clip_count }}</td>
+          {% for view, label, done, total in [('transcription', 'Transcription', v.reviewed_count or 0, v.clip_count or 0),
+                                              ('pad', 'PAD', v.pad_count or 0, v.pad_total or 0)] %}
+          <td class="nowrap">
+            <a class="progress-link" href="/videos/{{ v.id }}/{{ view }}" title="Ouvrir la vue {{ label }}">
+              <span class="progress-count">{{ done }} / {{ total }}</span>
+              <progress class="progress-bar" value="{{ done }}" max="{{ total or 1 }}"></progress>
+              <span class="progress-open">Ouvrir</span>
+            </a>
+          </td>
+          {% endfor %}
+          <td class="nowrap"><span class="state {{ v.status }}" title="{{ v.error or '' }}">{{ v.status }}</span></td>
+          <td class="nowrap">{{ v.created_at[:16].replace('T', ' ') }}<br><span class="hint">{{ v.uploaded_by }}</span></td>
+          <td class="nowrap">{% if user.role == 'admin' %}<button class="btn ghost danger" data-delete="{{ v.id }}" data-title="{{ v.title }}">Supprimer</button>{% endif %}</td>
         </tr>
       {% else %}
-        <tr><td colspan="8" class="hint">Aucune vidéo pour l'instant.</td></tr>
+        <tr><td colspan="9" class="hint">Aucune vidéo pour l'instant.</td></tr>
       {% endfor %}
       </tbody>
     </table>
